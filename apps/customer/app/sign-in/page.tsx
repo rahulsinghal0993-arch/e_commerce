@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '@arghya/api-client';
 import { useToastStore, Button, TextField } from '@arghya/ui';
 import { useAuth } from '../../context/AuthContext.js';
+import { isGoogleOAuthConfigured, startGoogleOAuth } from '../../lib/googleAuth.js';
 
 function SignInForm() {
   const { login } = useAuth();
@@ -17,6 +18,7 @@ function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,6 +31,17 @@ function SignInForm() {
       addToast(err instanceof ApiError ? err.message : 'Could not sign in.', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setGoogleBusy(true);
+    try {
+      await startGoogleOAuth({ mode: 'login' });
+      // The browser is about to leave for Google's consent screen.
+    } catch (err) {
+      setGoogleBusy(false);
+      addToast(err instanceof Error ? err.message : 'Could not start Google sign-in.', 'error');
     }
   };
 
@@ -83,6 +96,26 @@ function SignInForm() {
           <Button type="submit" disabled={submitting} className="w-full box-border mt-2">
             {submitting ? 'Signing in…' : 'Sign in'}
           </Button>
+
+          {isGoogleOAuthConfigured && (
+            <>
+              <div className="relative my-1 flex items-center justify-center">
+                <div className="absolute h-px w-full bg-divider" />
+                <span className="relative bg-bg px-3 text-[11px] uppercase tracking-wide text-neutral-700">
+                  Or
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={googleBusy || submitting}
+                onClick={handleGoogle}
+                className="w-full box-border"
+              >
+                {googleBusy ? 'Redirecting…' : 'Continue with Google'}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </div>

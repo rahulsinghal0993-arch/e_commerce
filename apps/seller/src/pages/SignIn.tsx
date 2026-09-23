@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { api } from '../lib/api.js';
 
 export default function SignIn() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +31,9 @@ export default function SignIn() {
         return;
       }
 
+      // Correct credentials, wrong account type — don't leave a non-seller
+      // session sitting in this console.
+      await logout();
       useToastStore.getState().addToast('This account is not registered to sell on Arghya.', 'error');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not sign in';

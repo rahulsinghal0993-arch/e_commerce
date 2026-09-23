@@ -37,14 +37,48 @@ function readPersistedItems(key: string): CartItem[] | null {
   }
 }
 
+function mergeCartItems(base: CartItem[], incoming: CartItem[]): CartItem[] {
+  const merged = base.map((item) => ({ ...item }));
+  for (const item of incoming) {
+    const existing = merged.find((i) => i.product.id === item.product.id);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      merged.push(item);
+    }
+  }
+  return merged;
+}
+
 // Swaps the persisted cart to the given owner (null = signed-out guest) and
-// loads that owner's saved items, leaving every other owner's cart untouched.
+// loads that owner's saved items. When the swap is a guest signing into an
+// account, the guest cart they were just building is folded into the
+// account's saved cart (not discarded) and the guest key is cleared so it
+// isn't merged in again — and inflated — on a future sign-in. Any other
+// transition (switching accounts, signing out) just loads that owner's own
+// saved cart, matching the original behavior.
 export function setCartOwner(userId?: string | null): void {
+  const previousKey = useCartStore.persist.getOptions().name;
   const key = cartStorageKey(userId);
-  if (useCartStore.persist.getOptions().name === key) return;
-  const saved = readPersistedItems(key);
+  if (previousKey === key) return;
+
+  const isGuestToUser = previousKey === GUEST_CART_KEY && Boolean(userId);
+  // Read the guest cart straight from storage rather than the live store
+  // state — zustand's persist rehydration is async, so `getState()` could
+  // still reflect the pre-hydration empty default at this point.
+  const guestItems = isGuestToUser ? (readPersistedItems(GUEST_CART_KEY) ?? []) : [];
+  const saved = readPersistedItems(key) ?? [];
+
   useCartStore.persist.setOptions({ name: key });
-  useCartStore.setState({ items: saved ?? [] });
+  useCartStore.setState({ items: isGuestToUser ? mergeCartItems(saved, guestItems) : saved });
+
+  if (isGuestToUser && guestItems.length > 0) {
+    try {
+      localStorage.removeItem(GUEST_CART_KEY);
+    } catch {
+      // Storage can be unavailable (e.g. private mode); nothing to clean up.
+    }
+  }
 }
 
 export const useCartStore = create<CartState>()(

@@ -7,6 +7,7 @@ import type {
   ListResponse,
   Order,
   OrderStatus,
+  PaginatedListResponse,
   Product,
   Review,
   SellerApplication,
@@ -48,9 +49,13 @@ export function createAdminApi({ request }: { request: RequestFn }) {
 
     // ---- Products ----
     adminDeleteProduct: (id: string): Promise<void> => request(`/admin/products/${id}`, { method: 'DELETE', auth: true }),
-    adminProducts: (approvalStatus?: string): Promise<ListResponse<Product>> => {
-      const qs = approvalStatus ? `?approval_status=${encodeURIComponent(approvalStatus)}` : '';
-      return request(`/admin/products${qs}`, { auth: true });
+    adminProducts: (
+      approvalStatus?: string,
+      { page = 1, limit = 100 }: { page?: number; limit?: number } = {}
+    ): Promise<PaginatedListResponse<Product>> => {
+      const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (approvalStatus) qs.set('approval_status', approvalStatus);
+      return request(`/admin/products?${qs}`, { auth: true });
     },
     adminSetProductApproval: (id: string, action: 'approve' | 'reject', reason?: string): Promise<Product> =>
       request(`/admin/products/${id}/approval`, {

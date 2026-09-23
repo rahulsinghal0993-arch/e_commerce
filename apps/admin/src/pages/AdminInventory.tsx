@@ -22,9 +22,27 @@ function stockTag(stock: number): StockTag {
   return { variant: 'live', label: 'Healthy' };
 }
 
+const FETCH_PAGE_SIZE = 200;
+
+// This screen shows the complete inventory grouped by store, not a
+// browsable page at a time — paging through it would split stores across
+// pages and make the totals lie. adminProducts() only returns one page, so
+// fetch every page and concatenate rather than capping at the first one.
+async function loadAllProducts(): Promise<Product[]> {
+  const items: Product[] = [];
+  let page = 1;
+  for (;;) {
+    const res = await api.adminProducts(undefined, { page, limit: FETCH_PAGE_SIZE });
+    items.push(...res.items);
+    if (items.length >= res.total || res.items.length === 0) break;
+    page += 1;
+  }
+  return items;
+}
+
 export default function AdminInventory() {
-  const { data, loading, error } = useAsync(() => api.adminProducts(), []);
-  const items = data?.items ?? [];
+  const { data, loading, error } = useAsync(loadAllProducts, []);
+  const items = data ?? [];
 
   const byStore = new Map<string, Product[]>();
   for (const p of items) {

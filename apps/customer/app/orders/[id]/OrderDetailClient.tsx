@@ -3,21 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { OrderStatus } from '@arghya/api-client';
 import { ApiError } from '@arghya/api-client';
-import { Button, EmptyState, Tag, type TagVariant } from '@arghya/ui';
-import { inr } from '@arghya/utils';
+import { Button, EmptyState, Tag } from '@arghya/ui';
+import { inr, orderStatusMeta } from '@arghya/utils';
 import { useAuth } from '../../../context/AuthContext.js';
 import { api } from '../../../lib/api.js';
 import type { CustomerOrder } from '../../../lib/serverTypes.js';
-
-const STATUS_TAG: Record<OrderStatus, { variant: TagVariant; label: string }> = {
-  pending: { variant: 'warn', label: 'Pending' },
-  paid: { variant: 'warn', label: 'Paid' },
-  shipped: { variant: 'live', label: 'Shipped' },
-  delivered: { variant: 'live', label: 'Delivered' },
-  cancelled: { variant: 'mute', label: 'Cancelled' },
-};
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=800';
 
@@ -92,7 +83,7 @@ export function OrderDetailClient({
 
   const address = order?.shipping_address ?? null;
   const cancellable = order && ['pending', 'paid'].includes(order.status);
-  const tag = order ? (STATUS_TAG[order.status] ?? { variant: 'mute' as TagVariant, label: order.status }) : null;
+  const tag = order ? orderStatusMeta(order.status) : null;
 
   return (
     <div className="px-4 md:px-11 py-6 max-w-[1000px] mx-auto w-full">

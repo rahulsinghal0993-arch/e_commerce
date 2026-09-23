@@ -16,6 +16,8 @@ const FILTERS: TabGroupOption[] = [
   { key: 'rejected', label: 'Rejected' },
 ];
 
+const PAGE_SIZE = 50;
+
 const APPROVAL_VARIANT: Record<ProductApprovalStatus, TagVariant> = {
   pending: 'warn',
   approved: 'live',
@@ -25,7 +27,11 @@ const APPROVAL_VARIANT: Record<ProductApprovalStatus, TagVariant> = {
 export default function AdminCatalog() {
   const addToast = useToastStore((s) => s.addToast);
   const [filter, setFilter] = useState<FilterKey>('');
-  const products = useAsync(() => api.adminProducts(filter || undefined), [filter]);
+  const [page, setPage] = useState(1);
+  const products = useAsync(
+    () => api.adminProducts(filter || undefined, { page, limit: PAGE_SIZE }),
+    [filter, page]
+  );
   // adminCategories() is declared to resolve a bare Category[], but the real
   // endpoint answers `{ items: [...] }` with a productCount per row (see
   // lib/adminTypes.ts) — cast to the shape this screen actually receives.
@@ -39,6 +45,13 @@ export default function AdminCatalog() {
 
   const productItems = products.data?.items ?? [];
   const categoryItems = categories.data?.items ?? [];
+  const total = products.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  function handleFilterChange(key: string) {
+    setFilter(key as FilterKey);
+    setPage(1);
+  }
 
   async function handleApprove(id: string) {
     setBusyId(id);
@@ -114,15 +127,12 @@ export default function AdminCatalog() {
         <div>
           <h1 className="text-2xl">Catalog</h1>
           <div className="mt-0.5 text-xs text-neutral-700">
-            {products.loading ? 'Loading…' : `${productItems.length} listings shown`}
+            {products.loading
+              ? 'Loading…'
+              : `${total} listing${total === 1 ? '' : 's'} · page ${page} of ${totalPages}`}
           </div>
         </div>
-        <TabGroup
-          className="ml-auto"
-          options={FILTERS}
-          value={filter}
-          onChange={(key) => setFilter(key as FilterKey)}
-        />
+        <TabGroup className="ml-auto" options={FILTERS} value={filter} onChange={handleFilterChange} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
@@ -207,6 +217,29 @@ export default function AdminCatalog() {
                 ))}
               </tbody>
             </table>
+          )}
+          {!products.loading && !products.error && totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Button
+                variant="quiet"
+                className="min-h-[36px] px-4 text-xs"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                ← Previous
+              </Button>
+              <span className="text-xs text-neutral-700">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="quiet"
+                className="min-h-[36px] px-4 text-xs"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next →
+              </Button>
+            </div>
           )}
         </Card>
 

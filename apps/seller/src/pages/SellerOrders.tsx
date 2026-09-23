@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { EmptyState, Button, Tag, TabGroup, useToastStore, type TagVariant } from '@arghya/ui';
-import { inr } from '@arghya/utils';
+import { EmptyState, Button, Tag, TabGroup, useToastStore } from '@arghya/ui';
+import { inr, orderStatusMeta } from '@arghya/utils';
 import type { OrderStatus } from '@arghya/api-client';
 import { api, type SellerOrder } from '../lib/api.js';
 
@@ -11,6 +11,9 @@ interface OrderTab {
   match: (status: OrderStatus) => boolean;
 }
 
+// Tab groupings are seller-workflow framing ("what do I need to do"), not
+// the order's status itself — the per-row Tag below uses the same
+// label/color every app uses for the actual status.
 const TABS: OrderTab[] = [
   { key: 'dispatch', label: 'To dispatch', match: (s) => s === 'pending' || s === 'paid' },
   { key: 'shipped', label: 'Shipped', match: (s) => s === 'shipped' },
@@ -18,22 +21,6 @@ const TABS: OrderTab[] = [
   { key: 'cancelled', label: 'Cancelled', match: (s) => s === 'cancelled' },
   { key: 'all', label: 'All', match: () => true },
 ];
-
-const STATUS_VARIANT: Record<OrderStatus, TagVariant> = {
-  pending: 'warn',
-  paid: 'warn',
-  shipped: 'live',
-  delivered: 'live',
-  cancelled: 'mute',
-};
-
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: 'To pack',
-  paid: 'To pack',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
-};
 
 export default function SellerOrders() {
   const [orders, setOrders] = useState<SellerOrder[] | null>(null);
@@ -139,7 +126,7 @@ export default function SellerOrders() {
                   <td className="text-neutral-700">{order.customerName || '—'}</td>
                   <td>{inr(order.total)}</td>
                   <td>
-                    <Tag variant={STATUS_VARIANT[order.status]}>{STATUS_LABEL[order.status]}</Tag>
+                    <Tag variant={orderStatusMeta(order.status).variant}>{orderStatusMeta(order.status).label}</Tag>
                   </td>
                   <td>
                     <div className="flex gap-1.5">

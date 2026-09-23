@@ -30,6 +30,14 @@ export default function SellerSignUp() {
     contactEmail: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  // Sign-up is two separate calls: register() creates the account and signs
+  // it in; createSellerApplication() files the application. If the account
+  // gets created but filing the application then fails, we must NOT ask the
+  // user to resubmit the whole form — api.register() would reject with
+  // "already registered" since the account already exists, dead-ending them
+  // with no way to finish. Once the account exists, retrying only re-files
+  // the application.
+  const [accountCreated, setAccountCreated] = useState(false);
 
   const set = (key: keyof SignUpForm) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -37,18 +45,26 @@ export default function SellerSignUp() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
+    // Local flag, not the `accountCreated` state — a state update scheduled
+    // in this same call wouldn't be visible yet if createSellerApplication
+    // below also throws, and the catch block needs to know which happened.
+    let justRegistered = accountCreated;
     try {
-      // Registering with role 'customer' (not 'seller') is deliberate: the
-      // /seller-applications endpoint is gated to customer accounts, and the
-      // seller role itself is only granted once an admin approves this
-      // application (see server/src/controllers/auth.controller.js).
-      const { user } = await api.register({
-        email: form.email,
-        password: form.password,
-        fullName: form.fullName,
-        role: 'customer',
-      });
-      applyUserPatch(user);
+      if (!accountCreated) {
+        // Registering with role 'customer' (not 'seller') is deliberate: the
+        // /seller-applications endpoint is gated to customer accounts, and the
+        // seller role itself is only granted once an admin approves this
+        // application (see server/src/controllers/auth.controller.js).
+        const { user } = await api.register({
+          email: form.email,
+          password: form.password,
+          fullName: form.fullName,
+          role: 'customer',
+        });
+        applyUserPatch(user);
+        justRegistered = true;
+        setAccountCreated(true);
+      }
 
       await api.createSellerApplication({
         store_name: form.storeName,
@@ -58,7 +74,14 @@ export default function SellerSignUp() {
       navigate('/pending', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not submit your application';
-      useToastStore.getState().addToast(message, 'error');
+      useToastStore
+        .getState()
+        .addToast(
+          justRegistered
+            ? `Your account is ready, but filing the application failed: ${message} — press submit again to retry just that step.`
+            : message,
+          'error'
+        );
     } finally {
       setSubmitting(false);
     }
@@ -97,12 +120,18 @@ export default function SellerSignUp() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5 bg-bg p-8 md:p-10">
           <div>
             <h2 className="text-2xl">Apply to sell</h2>
-            <p className="mt-1 text-sm text-neutral-700">
-              Already applied?{' '}
-              <Link to="/pending" className="font-bold">
-                Check your status
-              </Link>
-            </p>
+            {accountCreated ? (
+              <p className="mt-1 text-sm text-accent-700">
+                Your account is ready — just finish filing your application below.
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-neutral-700">
+                Already applied?{' '}
+                <Link to="/pending" className="font-bold">
+                  Check your status
+                </Link>
+              </p>
+            )}
           </div>
 
           <TextField
@@ -131,30 +160,36 @@ export default function SellerSignUp() {
               onChange={set('contactEmail')}
             />
           </div>
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <TextField
-              label="Login email"
-              id="ss-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={set('email')}
-            />
-            <TextField
-              label="Password"
-              id="ss-password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={form.password}
-              onChange={set('password')}
-            />
-          </div>
+          {accountCreated ? (
+            <div className="rounded-2xl border border-divider bg-neutral-100 px-4 py-3 text-sm text-neutral-700">
+              Signed in as <strong className="text-text">{form.email}</strong>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <TextField
+                label="Login email"
+                id="ss-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={form.email}
+                onChange={set('email')}
+              />
+              <TextField
+                label="Password"
+                id="ss-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={form.password}
+                onChange={set('password')}
+              />
+            </div>
+          )}
 
           <Button type="submit" disabled={submitting} className="mt-2 w-full">
-            {submitting ? 'Submitting…' : 'Submit application'}
+            {submitting ? 'Submitting…' : accountCreated ? 'Retry submitting application' : 'Submit application'}
           </Button>
           <p className="text-center text-[11px] text-neutral-700">
             Most applications are answered within two working days.

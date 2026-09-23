@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@arghya/api-client": "*"
+    "@arghya/api-client": "*",
+    "@arghya/ui": "*"
   }
 }

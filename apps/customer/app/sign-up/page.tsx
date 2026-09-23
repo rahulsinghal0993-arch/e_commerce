@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ApiError } from '@arghya/api-client';
 import { useToastStore, Button, TextField } from '@arghya/ui';
 import { useAuth } from '../../context/AuthContext.js';
+import { isGoogleOAuthConfigured, startGoogleOAuth } from '../../lib/googleAuth.js';
 
 export default function SignUpPage() {
   const { register } = useAuth();
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +30,17 @@ export default function SignUpPage() {
       addToast(err instanceof ApiError ? err.message : 'Could not create your account.', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setGoogleBusy(true);
+    try {
+      await startGoogleOAuth({ mode: 'signup' });
+      // The browser is about to leave for Google's consent screen.
+    } catch (err) {
+      setGoogleBusy(false);
+      addToast(err instanceof Error ? err.message : 'Could not start Google sign-in.', 'error');
     }
   };
 
@@ -87,6 +100,26 @@ export default function SignUpPage() {
           <Button type="submit" disabled={submitting} className="w-full box-border mt-2">
             {submitting ? 'Creating account…' : 'Create account'}
           </Button>
+
+          {isGoogleOAuthConfigured && (
+            <>
+              <div className="relative my-1 flex items-center justify-center">
+                <div className="absolute h-px w-full bg-divider" />
+                <span className="relative bg-bg px-3 text-[11px] uppercase tracking-wide text-neutral-700">
+                  Or
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={googleBusy || submitting}
+                onClick={handleGoogle}
+                className="w-full box-border"
+              >
+                {googleBusy ? 'Redirecting…' : 'Continue with Google'}
+              </Button>
+            </>
+          )}
         </div>
         <p className="text-[11px] text-neutral-700 mt-5">
           By continuing you accept the Terms and Privacy Policy.

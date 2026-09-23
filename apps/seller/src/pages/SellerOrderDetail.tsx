@@ -1,17 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, EmptyState, Tag, useToastStore, type TagVariant } from '@arghya/ui';
-import { inr } from '@arghya/utils';
+import { Button, Card, EmptyState, Tag, useToastStore } from '@arghya/ui';
+import { inr, orderStatusMeta } from '@arghya/utils';
 import type { OrderStatus } from '@arghya/api-client';
 import { api, type SellerOrder } from '../lib/api.js';
-
-const STATUS_VARIANT: Record<OrderStatus, TagVariant> = {
-  pending: 'warn',
-  paid: 'warn',
-  shipped: 'live',
-  delivered: 'live',
-  cancelled: 'mute',
-};
 
 interface NextStatus {
   status: OrderStatus;
@@ -120,8 +112,8 @@ export default function SellerOrderDetail() {
             Placed {new Date(order.createdAt).toLocaleString()}
           </div>
         </div>
-        <Tag variant={STATUS_VARIANT[order.status]} className="ml-1">
-          {order.status}
+        <Tag variant={orderStatusMeta(order.status).variant} className="ml-1">
+          {orderStatusMeta(order.status).label}
         </Tag>
         <div className="ml-auto flex gap-2.5">
           {actions.map((a) => (

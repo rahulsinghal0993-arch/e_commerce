@@ -215,14 +215,19 @@ function shapeAdminProduct(row, coverUrl) {
 }
 
 // GET /admin/products — moderation queue. Optionally filtered to one approval
-// state (the Approvals tab asks for pending); newest first.
-export async function listProductsForApproval({ approval_status, limit } = {}) {
-  let query = db.from('products').select(ADMIN_PRODUCT_SELECT);
+// state (the Approvals tab asks for pending); newest first, paginated (this
+// used to be a bare .limit(100) with no way to reach anything past it once a
+// marketplace had more than 100 products).
+export async function listProductsForApproval({ approval_status, limit = 100, page = 1 } = {}) {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = db.from('products').select(ADMIN_PRODUCT_SELECT, { count: 'exact' });
   if (approval_status) query = query.eq('approval_status', approval_status);
 
-  const { data, error } = await query
+  const { data, count, error } = await query
     .order('created_at', { ascending: false })
-    .limit(limit ?? 100);
+    .range(from, to);
 
   if (error) throw new AppError(500, `Could not load products: ${error.message}`);
 
@@ -233,6 +238,9 @@ export async function listProductsForApproval({ approval_status, limit } = {}) {
     items: (data ?? []).map((row) =>
       shapeAdminProduct(row, pickCover(imagesByProduct.get(row.id)))
     ),
+    page,
+    limit,
+    total: count ?? 0,
   };
 }
 

@@ -169,6 +169,15 @@ export interface ListResponse<T> {
   items: T[];
 }
 
+// Endpoints that actually paginate (offset + a real total count) answer this
+// richer shape instead of the plain ListResponse<T>.
+export interface PaginatedListResponse<T> {
+  items: T[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
 export interface PaymentOrder {
   keyId: string;
   orderId: string;

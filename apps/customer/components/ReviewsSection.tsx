@@ -26,7 +26,7 @@ export function ReviewsSection({
   const { userRole } = useAuth();
   const addToast = useToastStore((s) => s.addToast);
   const [reviews, setReviews] = useState<CustomerReview[]>(initialReviews);
-  const [average] = useState(initialAverage);
+  const [average, setAverage] = useState(initialAverage);
   const [count, setCount] = useState(initialCount);
   const [eligible, setEligible] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
@@ -63,11 +63,20 @@ export function ReviewsSection({
     setSubmitting(true);
     try {
       const saved = (await api.createProductReview(productId, { rating, comment })) as unknown as CustomerReview;
+      const previousMine = reviews.find((r) => r.userId === saved.userId);
       setReviews((prev) => {
         const withoutMine = prev.filter((r) => r.userId !== saved.userId);
         return [saved, ...withoutMine];
       });
-      setCount((c) => (reviews.some((r) => r.userId === saved.userId) ? c : c + 1));
+      // `average`/`count` reflect every review on the product, not just the
+      // (possibly partial) page in `reviews` — recompute from the totals
+      // rather than the local list, which the count already comes from.
+      if (previousMine) {
+        setAverage((avg) => (count > 0 ? (avg * count - previousMine.rating + saved.rating) / count : saved.rating));
+      } else {
+        setCount((c) => c + 1);
+        setAverage((avg) => (avg * count + saved.rating) / (count + 1));
+      }
       addToast('Thanks — your review is posted.', 'success');
       setComment('');
     } catch (err) {

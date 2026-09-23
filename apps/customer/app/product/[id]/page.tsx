@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Product } from '@arghya/api-client';
@@ -69,16 +70,30 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <div className="grid md:grid-cols-2 gap-10">
           <div>
             {product.images && product.images.length > 0 ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.images[0]?.url} alt={product.name} className="w-full h-[340px] md:h-[420px] object-cover rounded-3xl" />
+              <div className="relative w-full h-[340px] md:h-[420px] rounded-3xl overflow-hidden">
+                <Image
+                  src={product.images[0]?.url ?? ''}
+                  alt={product.name}
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
+                  priority
+                />
+              </div>
             ) : (
               <div className="ph h-[340px] md:h-[420px] rounded-3xl">PRODUCT IMAGE</div>
             )}
             {product.images && product.images.length > 1 && (
               <div className="flex gap-3 mt-3.5 overflow-x-auto">
                 {product.images.slice(1).map((img) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={img.id} src={img.url} alt={product.name} className="w-20 h-20 rounded-2xl object-cover shrink-0" />
+                  <Image
+                    key={img.id}
+                    src={img.url}
+                    alt={product.name}
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 rounded-2xl object-cover shrink-0"
+                  />
                 ))}
               </div>
             )}

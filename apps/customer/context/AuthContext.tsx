@@ -12,12 +12,19 @@ interface RegisterInput {
   fullName: string;
 }
 
+export interface OAuthSessionInput {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number | null;
+}
+
 interface AuthContextValue {
   user: CustomerUser | null;
   userRole: UserRole;
   loading: boolean;
   login: (email: string, password: string) => Promise<CustomerUser>;
   register: (input: RegisterInput) => Promise<{ user: CustomerUser }>;
+  loginWithGoogle: (session: OAuthSessionInput, mode: 'login' | 'signup') => Promise<{ user: CustomerUser }>;
   logout: () => Promise<void>;
   applyUserPatch: (patch: Partial<CustomerUser>) => void;
 }
@@ -70,12 +77,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { user: registeredUser };
   };
 
+  // Exchanges a browser-side Google/Supabase session (already established by
+  // the OAuth redirect) for our own shaped app session. The storefront only
+  // ever creates 'customer' accounts, so `role` is implicit — 'mode' just
+  // tells the backend whether this is a first-time signup or a return visit.
+  const loginWithGoogle = async (session: OAuthSessionInput, mode: 'login' | 'signup') => {
+    const data = await api.oauthSession(session, { mode, role: 'customer' });
+    const oauthUser = data.user as CustomerUser;
+    setCartOwner(oauthUser.id);
+    setUser(oauthUser);
+    return { user: oauthUser };
+  };
+
   const logout = async () => {
+    // Clear the UI immediately; notifying the server (cookie clear) is
+    // best-effort so a slow/unreachable API never blocks signing out.
     setCartOwner(null);
     setUser(null);
     await api.logout();
   };
 
+  // Merge freshly saved profile fields into the in-memory user so the UI
+  // reflects the change without a full reload.
   const applyUserPatch = (patch: Partial<CustomerUser>) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : (patch as CustomerUser)));
   };
@@ -83,7 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userRole: UserRole = user?.role ?? 'guest';
 
   return (
-    <AuthContext.Provider value={{ user, userRole, loading, login, register, logout, applyUserPatch }}>
+    <AuthContext.Provider
+      value={{ user, userRole, loading, login, register, loginWithGoogle, logout, applyUserPatch }}
+    >
       {children}
     </AuthContext.Provider>
   );

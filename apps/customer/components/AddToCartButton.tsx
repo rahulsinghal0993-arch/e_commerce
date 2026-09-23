@@ -66,7 +66,7 @@ export function AddToCartButton({ product }: { product: ProductCard }) {
         type="button"
         onClick={() => {
           handleAdd();
-          router.push('/cart');
+          router.push('/checkout');
         }}
         disabled={soldOut}
         className="btn-ghost min-h-12 rounded-full border border-accent text-accent-700 font-heading px-5 cursor-pointer hover:bg-accent-100 disabled:opacity-40 transition-colors"

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { ProductCard as ProductCardData } from '@arghya/api-client';
 import { inr } from '@arghya/utils';
@@ -16,8 +17,15 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         </span>
       )}
       <Link href={`/product/${product.id}`} className="block no-underline text-inherit">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={product.img} alt={product.title} loading="lazy" className="w-full h-[150px] object-cover" />
+        <div className="relative w-full h-[150px]">
+          <Image
+            src={product.img}
+            alt={product.title}
+            fill
+            sizes="(min-width: 768px) 25vw, 50vw"
+            className="object-cover"
+          />
+        </div>
         <div className="px-4 pt-3.5">
           <div className="font-heading text-[16px] leading-tight">{product.title}</div>
           <div className="text-[12px] text-neutral-700 mt-1">

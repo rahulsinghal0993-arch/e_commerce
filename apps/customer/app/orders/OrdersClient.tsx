@@ -3,21 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { OrderStatus } from '@arghya/api-client';
 import { ApiError } from '@arghya/api-client';
-import { Button, EmptyState, Tag, type TagVariant } from '@arghya/ui';
-import { inr } from '@arghya/utils';
+import { Button, EmptyState, Tag } from '@arghya/ui';
+import { inr, orderStatusMeta } from '@arghya/utils';
 import { useAuth } from '../../context/AuthContext.js';
 import { api } from '../../lib/api.js';
 import type { CustomerOrder } from '../../lib/serverTypes.js';
-
-const STATUS_TAG: Record<OrderStatus, { variant: TagVariant; label: string }> = {
-  pending: { variant: 'warn', label: 'Pending' },
-  paid: { variant: 'warn', label: 'Paid' },
-  shipped: { variant: 'live', label: 'Shipped' },
-  delivered: { variant: 'live', label: 'Delivered' },
-  cancelled: { variant: 'mute', label: 'Cancelled' },
-};
 
 function shortId(id: string): string {
   return id ? String(id).slice(0, 8).toUpperCase() : '';
@@ -92,7 +83,7 @@ export function OrdersClient() {
       {!loading && !error && orders.length > 0 && (
         <div className="flex flex-col gap-3 mt-5">
           {orders.map((order) => {
-            const tag = STATUS_TAG[order.status] ?? { variant: 'mute' as TagVariant, label: order.status };
+            const tag = orderStatusMeta(order.status);
             return (
               <Link
                 key={order.id}
