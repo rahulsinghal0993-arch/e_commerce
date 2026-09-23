@@ -1,0 +1,113 @@
+/* Arghya design tokens, ported verbatim from the product-design artboards
+   (project/Main.dc.html and siblings) so every app renders the same palette
+   and type system. Import this AFTER `@import "tailwindcss";` in each app's
+   global stylesheet — Tailwind v4 turns every `--color-*`/`--font-*`/
+   `--shadow-*`/`--radius-*` token below into matching utility classes
+   (e.g. `bg-accent-700`, `font-heading`, `shadow-lg`). */
+
+/* Tailwind v4 never scans node_modules by default, so classes used only
+   inside this package's own components (Button, Tag, Card, ...) — reached
+   by every app through the symlinked @arghya/ui workspace package — were
+   silently dropped from the generated CSS (no padding, no inline-flex, no
+   min-height), which is what made pill buttons clip their own label text.
+   This re-adds this package's source to every app's scan, resolved
+   relative to this file. */
+@source "./src";
+
+@theme {
+  --color-bg: #FDF8F0;
+  --color-surface: #F5ECDE;
+  --color-text: #241A14;
+  --color-divider: #E4D6C3;
+
+  --color-neutral-100: #FBF6EF;
+  --color-neutral-200: #F0E7DA;
+  --color-neutral-300: #DFD2C0;
+  --color-neutral-400: #C2B199;
+  --color-neutral-600: #8A7A67;
+  --color-neutral-700: #6B5B49;
+  --color-neutral-800: #43372B;
+  --color-neutral-900: #241A14;
+
+  --color-accent: #B7322A;
+  --color-accent-100: #F8E3DF;
+  --color-accent-300: #E8B4AC;
+  --color-accent-500: #B7322A;
+  --color-accent-600: #A32B24;
+  --color-accent-700: #87231D;
+  --color-accent-800: #6A1B16;
+  --color-accent-900: #4A120F;
+
+  --color-accent-2: #E0A11C;
+  --color-accent-2-100: #FCF0D7;
+  --color-accent-2-200: #F8E1AE;
+  --color-accent-2-300: #F2CE85;
+  --color-accent-2-500: #E0A11C;
+  --color-accent-2-600: #C08310;
+  --color-accent-2-700: #96660A;
+  --color-accent-2-800: #6F4B08;
+  --color-accent-2-900: #4A3105;
+
+  --font-heading: 'Marcellus', Georgia, serif;
+  --font-body: 'Karla', system-ui, sans-serif;
+  --font-devanagari: 'Tiro Devanagari Hindi', 'Marcellus', serif;
+
+  --shadow-sm: 0 1px 2px rgba(36, 26, 20, .10);
+  --shadow-md: 0 4px 14px rgba(36, 26, 20, .10);
+  --shadow-lg: 0 18px 48px rgba(36, 26, 20, .14);
+
+  --radius-lg: 24px;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+  }
+
+  body {
+    background: var(--color-bg);
+    font-family: var(--font-body);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--color-accent-700);
+  }
+  a:hover {
+    color: var(--color-accent-800);
+  }
+
+  .dev {
+    font-family: var(--font-devanagari);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+  }
+  th {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-neutral-700);
+    font-weight: 700;
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--color-divider);
+    text-align: left;
+  }
+  td {
+    padding: 11px 8px;
+    border-bottom: 1px solid var(--color-divider);
+    text-align: left;
+  }
+  tr:last-child td {
+    border-bottom: 0;
+  }
+}

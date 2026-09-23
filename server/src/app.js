@@ -18,7 +18,17 @@ import { notFound, errorHandler } from './middleware/error.js';
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: env.clientOrigin, credentials: true }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // Same-origin/non-browser requests (curl, health checks) send no
+        // Origin header at all — allow those through.
+        if (!origin || env.clientOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+      },
+      credentials: true,
+    })
+  );
   app.use(
     helmet({
       // The API only ever returns JSON, so a strict policy is safe. The SPA's
