@@ -22,4 +22,5 @@ export const reviewProductApprovalSchema = z.object({
 export const adminProductsQuerySchema = z.object({
   approval_status: z.enum(['pending', 'approved', 'rejected']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100),
+  page: z.coerce.number().int().min(1).default(1),
 });

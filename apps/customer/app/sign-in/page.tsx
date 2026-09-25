@@ -1,0 +1,131 @@
+'use client';
+
+import { Suspense, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ApiError } from '@arghya/api-client';
+import { useToastStore, Button, TextField } from '@arghya/ui';
+import { useAuth } from '../../context/AuthContext.js';
+import { isGoogleOAuthConfigured, startGoogleOAuth } from '../../lib/googleAuth.js';
+
+function SignInForm() {
+  const { login } = useAuth();
+  const addToast = useToastStore((s) => s.addToast);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '/';
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await login(email, password);
+      router.push(next);
+      router.refresh();
+    } catch (err) {
+      addToast(err instanceof ApiError ? err.message : 'Could not sign in.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setGoogleBusy(true);
+    try {
+      await startGoogleOAuth({ mode: 'login' });
+      // The browser is about to leave for Google's consent screen.
+    } catch (err) {
+      setGoogleBusy(false);
+      addToast(err instanceof Error ? err.message : 'Could not start Google sign-in.', 'error');
+    }
+  };
+
+  return (
+    <div className="min-h-screen grid md:grid-cols-2">
+      <div className="hidden md:flex flex-col justify-between p-12 bg-accent text-accent-2-200 relative overflow-hidden">
+        <Link href="/" className="flex items-center gap-2.5 no-underline relative z-10">
+          <span className="dev w-8 h-8 rounded-full bg-accent-2-500 text-accent-900 grid place-items-center text-[18px] pb-0.5">
+            ॐ
+          </span>
+          <span className="font-heading text-xl text-bg">Arghya</span>
+        </Link>
+        <div className="relative z-10">
+          <div className="dev text-4xl leading-tight text-accent-2-300">अर्घ्य</div>
+          <h1 className="text-[38px] my-3.5 text-bg max-w-[14ch] leading-tight">Everything the ritual asks for.</h1>
+          <p className="text-[15px] max-w-[34ch] text-white/85 leading-relaxed m-0">
+            Pandit-verified puja kits, havan samagri and bilona gau ghee — delivered before your muhurat.
+          </p>
+        </div>
+        <div className="flex gap-5 text-xs text-white/75 relative z-10">
+          <span>Shuddh sourcing</span>
+          <span>·</span>
+          <span>Pandit-verified kits</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col justify-center px-6 md:px-16 py-12">
+        <h2 className="text-[28px] m-0 mb-1.5">Sign in</h2>
+        <p className="text-sm text-neutral-700 mb-6">
+          New here?{' '}
+          <Link href="/sign-up" className="font-bold">
+            Create an account
+          </Link>
+        </p>
+        <div className="flex flex-col gap-3.5 max-w-[380px]">
+          <TextField
+            label="Email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <TextField
+            label="Password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button type="submit" disabled={submitting} className="w-full box-border mt-2">
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </Button>
+
+          {isGoogleOAuthConfigured && (
+            <>
+              <div className="relative my-1 flex items-center justify-center">
+                <div className="absolute h-px w-full bg-divider" />
+                <span className="relative bg-bg px-3 text-[11px] uppercase tracking-wide text-neutral-700">
+                  Or
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={googleBusy || submitting}
+                onClick={handleGoogle}
+                className="w-full box-border"
+              >
+                {googleBusy ? 'Redirecting…' : 'Continue with Google'}
+              </Button>
+            </>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInForm />
+    </Suspense>
+  );
+}

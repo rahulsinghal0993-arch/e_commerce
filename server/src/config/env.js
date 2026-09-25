@@ -29,9 +29,18 @@ if ((process.env.NODE_ENV || 'development') !== 'test') {
   }
 }
 
+// The app used to be one SPA (one origin). It's now three separately-hosted
+// client apps (customer/seller/admin), so CORS needs a list. CLIENT_ORIGINS
+// (comma-separated) is preferred; CLIENT_ORIGIN keeps working as a
+// single-value fallback for existing deploys.
+const clientOrigins = (process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 export const env = {
   port: Number(process.env.PORT) || 4000,
-  clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  clientOrigins,
   nodeEnv: process.env.NODE_ENV || 'development',
   // Session cookie policy. `lax` is safe for same-site frontends (the common
   // case); set COOKIE_SAMESITE=none when the API is served from a different

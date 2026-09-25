@@ -1,0 +1,14 @@
+export { createApiClient, ApiError } from './client.js';
+export type { ApiClient, RequestFn, RequestOptions } from './client.js';
+export { createAuthApi } from './auth.js';
+export type { AuthResponse, RegisterInput } from './auth.js';
+export { createCatalogApi } from './catalog.js';
+export type { ProductQuery } from './catalog.js';
+export { createOrdersApi } from './orders.js';
+export type { OrderItemInput } from './orders.js';
+export { createPaymentsApi } from './payments.js';
+export { createSellerApi } from './seller.js';
+export { createAdminApi } from './admin.js';
+export type { SellerSummary } from './admin.js';
+export { createContactApi } from './contact.js';
+export * from './types.js';

@@ -1,0 +1,34 @@
+// Maps API products (catalog/service shape) to the display shape the
+// storefront components render. Keeping the UI-facing shape stable means
+// product-card/grid code needs no changes when the API payload shifts.
+import type { Product, ProductCard } from '@arghya/api-client';
+
+const FALLBACK_IMG =
+  'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=800';
+
+export function toProductCard(p: Product): ProductCard {
+  const price = Number(p.salePrice ?? p.price ?? 0);
+  const oldPrice = p.discount_percent > 0 ? Number(p.price) : null;
+  const discount = p.discount_percent > 0;
+  const outOfStock = p.stock === 0;
+
+  return {
+    id: p.id,
+    title: p.name,
+    price,
+    oldPrice,
+    desc: p.description || '',
+    img: p.coverImage || FALLBACK_IMG,
+    badge: outOfStock ? 'SOLD OUT' : discount ? `-${p.discount_percent}% OFF` : null,
+    badgeColor: outOfStock ? 'secondary' : 'error',
+    category: p.category?.name ?? 'Uncategorized',
+    storeId: p.storeId ?? null,
+    storeName: p.storeName ?? null,
+    stock: p.stock,
+    status: p.status,
+  };
+}
+
+export function toProductCardList(items: Product[] = []): ProductCard[] {
+  return items.map(toProductCard);
+}
